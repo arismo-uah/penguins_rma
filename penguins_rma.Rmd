@@ -1,0 +1,134 @@
+---
+title: "Palmer Penguins"
+author: "Álvaro Risco Morillo"
+date: "17/1/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Librerías y datos
+
+```{r install, eval=FALSE, include=TRUE}
+install.packages("tidyverse"
+install.packages("palmerpenguins")
+```
+
+```{r load and cleanup, message=FALSE}
+library("tidyverse")
+library("palmerpenguins")
+data(package = "palmerpenguins")
+penguins <- na.omit(penguins)
+```
+
+## 1. Datos de los pingüinos
+
+A.  Población de pingüinos:
+
+```{r penguins population}
+penguins_species <- penguins$species %>% 
+  levels() %>% 
+  sort()
+
+penguins_sex <- penguins$sex %>% 
+  levels() %>% 
+  sort()
+
+counter_population <- function(i, j) {
+    k <- sum(penguins$species == i & penguins$sex == j)
+    return(k)
+}
+
+penguins_population <- outer(penguins_species, 
+                             penguins_sex, 
+                             Vectorize(counter_population)) %>% 
+  as.data.frame()
+
+colnames(penguins_population) <- penguins_sex
+rownames(penguins_population) <- penguins_species
+
+penguins_population <- mutate(penguins_population, 
+                              total = female + male)
+```
+
+```{r results 1, echo=FALSE}
+penguins_population
+```
+
+B.  Medidas de los pingüinos:
+
+```{r penguins data}
+parameters <- c("mean", 
+                "sd", 
+                "min", 
+                "max")
+
+measurements <- c("bill_length_mm", 
+                  "bill_depth_mm", 
+                  "flipper_length_mm", 
+                  "body_mass_g")
+
+penguins_data <- data.frame()
+
+for (i in measurements) {
+  j <- penguins %>% 
+    select(all_of(i)) %>% 
+    as_vector()
+  
+  k <- c(mean(j), 
+         sd(j), 
+         min(j), 
+         max(j)) %>% 
+    round(digits = 1)
+  
+  penguins_data <- rbind(penguins_data, k)
+}
+
+colnames(penguins_data) <- parameters
+rownames(penguins_data) <- measurements
+```
+
+```{r results 2, echo=FALSE}
+penguins_data
+```
+
+## 2. Gráfico de barras
+
+A.  Gráfico 1:
+
+```{r figure 1}
+bar_colours <- c("orange", 
+                 "purple", 
+                 "blue")
+
+ggplot(penguins) +
+  geom_bar(aes(x = island, fill = species)) +
+  scale_fill_manual(values = bar_colours)
+```
+
+B.  ¿Qué especie se ha muestreado en las tres islas?\
+    Adelie
+
+C.  ¿Cuántos individuos se han muestreado de la isla Dream?\
+    `r sum(penguins$island == "Dream")`
+
+## 3. Gráfico multipanel de cajas y bigotes
+
+A.  Gráfico 2:
+
+```{r figure 2}
+ggplot(penguins) +
+  geom_boxplot(aes(x = sex, 
+                   y = body_mass_g, 
+                   color = sex)) +
+  facet_grid(cols = vars(species))
+```
+
+B.  ¿Qué especie tiene mayor tamaño?\
+    Gentoo
+
+C.  ¿En qué especie las hembras y los machos tienen un tamaño más similar?\
+    Chinstrap
+
